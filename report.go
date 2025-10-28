@@ -218,8 +218,8 @@ const htmlTemplate = `<!DOCTYPE html>
                     <span class="badge badge-success">{{.Status}}</span>
                     <span class="badge badge-info">{{.Type}}</span>
                     {{if .Priority}}<span class="badge badge-warning">{{.Priority}}</span>{{end}}
-                    {{if .StoryPoints}}<span class="badge badge-info">{{printf "%.1f" .StoryPoints}} SP</span>{{end}}
-                    Resolved: {{.Resolved.Format "2006-01-02"}}
+                    {{if .HasStoryPoints}}<span class="badge badge-info">{{printf "%.1f SP" .StoryPoints}}</span>{{end}}
+                    {{if not .Resolved.IsZero}}Resolved: {{.Resolved.Format "2006-01-02"}}{{end}}
                 </div>
             </li>
         {{end}}
@@ -330,8 +330,8 @@ func GenerateReport(associateName, quarter string, year int, startDate, endDate 
 	// Count story points
 	totalStoryPoints := 0.0
 	for _, issue := range jiraIssues {
-		if issue.StoryPoints != nil {
-			totalStoryPoints += *issue.StoryPoints
+		if issue.HasStoryPoints {
+			totalStoryPoints += issue.StoryPoints
 		}
 	}
 

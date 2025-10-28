@@ -16,17 +16,18 @@ type JiraClient struct {
 }
 
 type JiraIssue struct {
-	Key         string `json:"key"`
-	Summary     string
-	Status      string
-	Type        string
-	Priority    string
-	StoryPoints *float64
-	Assignee    string
-	Reporter    string
-	Created     time.Time
-	Updated     time.Time
-	Resolved    time.Time
+	Key            string `json:"key"`
+	Summary        string
+	Status         string
+	Type           string
+	Priority       string
+	StoryPoints    float64
+	HasStoryPoints bool
+	Assignee       string
+	Reporter       string
+	Created        time.Time
+	Updated        time.Time
+	Resolved       time.Time
 }
 
 type jiraSearchResponse struct {
@@ -122,29 +123,31 @@ func (j *JiraClient) FetchCompletedIssues(username string, startDate, endDate ti
 		resolved, _ := time.Parse(time.RFC3339, issue.Fields.ResolutionDate)
 
 		// Parse story points - could be float64 or nil
-		var storyPoints *float64
+		storyPoints := 0.0
+		hasStoryPoints := false
 		if issue.Fields.StoryPoints != nil {
+			hasStoryPoints = true
 			switch v := issue.Fields.StoryPoints.(type) {
 			case float64:
-				storyPoints = &v
+				storyPoints = v
 			case int:
-				fp := float64(v)
-				storyPoints = &fp
+				storyPoints = float64(v)
 			}
 		}
 
 		issues = append(issues, JiraIssue{
-			Key:         issue.Key,
-			Summary:     issue.Fields.Summary,
-			Status:      issue.Fields.Status.Name,
-			Type:        issue.Fields.IssueType.Name,
-			Priority:    issue.Fields.Priority.Name,
-			StoryPoints: storyPoints,
-			Assignee:    issue.Fields.Assignee.DisplayName,
-			Reporter:    issue.Fields.Reporter.DisplayName,
-			Created:     created,
-			Updated:     updated,
-			Resolved:    resolved,
+			Key:            issue.Key,
+			Summary:        issue.Fields.Summary,
+			Status:         issue.Fields.Status.Name,
+			Type:           issue.Fields.IssueType.Name,
+			Priority:       issue.Fields.Priority.Name,
+			StoryPoints:    storyPoints,
+			HasStoryPoints: hasStoryPoints,
+			Assignee:       issue.Fields.Assignee.DisplayName,
+			Reporter:       issue.Fields.Reporter.DisplayName,
+			Created:        created,
+			Updated:        updated,
+			Resolved:       resolved,
 		})
 	}
 
