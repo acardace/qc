@@ -1,7 +1,7 @@
 .PHONY: build clean install test deps help
 
 # Binary name
-BINARY_NAME=qc
+BINARY_NAME=contribution-report
 
 # Build directory
 BUILD_DIR=.
@@ -17,7 +17,7 @@ GOINSTALL=$(GOCMD) install
 # Build the binary for Linux
 build:
 	@echo "Building $(BINARY_NAME) for Linux..."
-	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/qc
+	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/contribution-report
 
 # Clean build artifacts
 clean:

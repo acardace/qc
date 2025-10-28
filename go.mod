@@ -1,4 +1,4 @@
-module github.com/acardace/qc
+module github.com/acardace/contribution-report
 
 go 1.25.2
 

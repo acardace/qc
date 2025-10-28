@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/acardace/qc/internal/clients"
+	"github.com/acardace/contribution-report/internal/clients"
 )
 
 type ReportData struct {

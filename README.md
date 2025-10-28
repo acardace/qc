@@ -1,6 +1,6 @@
-# Quarterly Connection (QC)
+# Contribution Report
 
-A CLI tool to generate quarterly performance reports for associates by aggregating data from Jira and GitHub.
+A CLI tool to generate contribution reports for associates by aggregating data from Jira and GitHub.
 
 ## Features
 
@@ -75,19 +75,19 @@ associates:
 
 ```bash
 # Generate a report for a single associate
-./qc --quarter Q1 --year 2024 --associate john_doe
+./contribution-report --quarter Q1 --year 2024 --associate john_doe
 
 # Generate reports for ALL associates in the config file
-./qc --quarter Q2 --year 2024
+./contribution-report --quarter Q2 --year 2024
 
 # Generate reports for all associates (current year)
-./qc --quarter Q3
+./contribution-report --quarter Q3
 
 # Specify custom config file
-./qc --quarter Q3 --associate john_doe --config /path/to/config.yaml
+./contribution-report --quarter Q3 --associate john_doe --config /path/to/config.yaml
 
 # Specify custom output directory
-./qc --quarter Q4 --output /path/to/reports
+./contribution-report --quarter Q4 --output /path/to/reports
 ```
 
 ### Command-line Options
@@ -129,7 +129,7 @@ The report includes:
 ### Single Associate
 
 ```bash
-$ ./qc --quarter Q1 --year 2024 --associate john_doe
+$ ./contribution-report --quarter Q1 --year 2024 --associate john_doe
 [1/1] Generating report for john_doe (Q1 2024: 2024-01-01 to 2024-03-31)...
   Fetching Jira data...
   Fetching GitHub data...
@@ -145,7 +145,7 @@ $ ./qc --quarter Q1 --year 2024 --associate john_doe
 ### All Associates
 
 ```bash
-$ ./qc --quarter Q2 --year 2024
+$ ./contribution-report --quarter Q2 --year 2024
 No associate specified - generating reports for all 3 associates
 
 [1/3] Generating report for john_doe (Q2 2024: 2024-04-01 to 2024-06-30)...
@@ -183,7 +183,7 @@ No associate specified - generating reports for all 3 associates
 ```
 .
 ├── cmd/
-│   └── qc/
+│   └── contribution-report/
 │       └── main.go              # CLI entry point and main logic
 ├── internal/
 │   ├── clients/
