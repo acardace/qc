@@ -4,14 +4,22 @@ A CLI tool to generate quarterly performance reports for associates by aggregati
 
 ## Features
 
-- Fetches completed Jira issues for a given quarter
-- Retrieves GitHub contributions including:
-  - Pull requests (created and merged)
+- **Jira Integration**: Fetches completed issues with detailed metrics:
+  - Story points
+  - Priority
+  - Issue type
+  - Resolution date
+  - Reporter and assignee information
+- **GitHub Integration**: Retrieves comprehensive contribution data:
+  - Pull requests (with commits, lines changed, files modified)
   - Issues (created and participated in)
   - Code reviews performed
-- Generates beautiful HTML reports with statistics and detailed breakdowns
-- Supports hardcoded quarters (Q1-Q4) with automatic date range calculation
-- Configurable via YAML for multiple associates
+- **Rich HTML Reports**: Beautiful, responsive reports with:
+  - Summary statistics (story points, commits, code changes)
+  - Detailed breakdowns of all work items
+  - Visual badges for status, priority, and metrics
+- **Hardcoded Quarters**: Q1-Q4 with automatic date range calculation
+- **Multi-user Support**: Configurable via YAML for multiple associates
 
 ## Quarters
 
@@ -112,11 +120,20 @@ Example: `john_doe_Q1_2024.html`
 
 The report includes:
 
-- Summary statistics (Jira issues, PRs, issues, code reviews, repositories)
-- Detailed list of completed Jira issues
-- Pull requests created (with merge status)
-- GitHub issues created or participated in
-- Code reviews performed on other people's PRs
+- **Summary Statistics**:
+  - Jira issues completed (with total story points)
+  - Pull requests created and merged
+  - Total commits across all PRs
+  - Lines of code added/deleted
+  - GitHub issues created or participated in
+  - Code reviews performed
+  - Unique repositories worked on
+
+- **Detailed Breakdowns**:
+  - **Jira Issues**: Key, summary, status, type, priority, story points, resolution date
+  - **Pull Requests**: Number, title, repo, commits, additions/deletions, files changed, merge status
+  - **GitHub Issues**: Number, title, repo, state, creation/closure dates
+  - **Code Reviews**: PRs reviewed with repository information
 
 ## Example
 

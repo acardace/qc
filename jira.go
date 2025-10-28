@@ -16,12 +16,17 @@ type JiraClient struct {
 }
 
 type JiraIssue struct {
-	Key     string `json:"key"`
-	Summary string
-	Status  string
-	Type    string
-	Created time.Time
-	Updated time.Time
+	Key         string `json:"key"`
+	Summary     string
+	Status      string
+	Type        string
+	Priority    string
+	StoryPoints *float64
+	Assignee    string
+	Reporter    string
+	Created     time.Time
+	Updated     time.Time
+	Resolved    time.Time
 }
 
 type jiraSearchResponse struct {
@@ -35,8 +40,19 @@ type jiraSearchResponse struct {
 			IssueType struct {
 				Name string `json:"name"`
 			} `json:"issuetype"`
-			Created string `json:"created"`
-			Updated string `json:"updated"`
+			Priority struct {
+				Name string `json:"name"`
+			} `json:"priority"`
+			Assignee struct {
+				DisplayName string `json:"displayName"`
+			} `json:"assignee"`
+			Reporter struct {
+				DisplayName string `json:"displayName"`
+			} `json:"reporter"`
+			StoryPoints      interface{} `json:"customfield_12310243"` // Common story points field
+			Created          string      `json:"created"`
+			Updated          string      `json:"updated"`
+			ResolutionDate   string      `json:"resolutiondate"`
 		} `json:"fields"`
 	} `json:"issues"`
 	Total int `json:"total"`
@@ -62,7 +78,7 @@ func (j *JiraClient) FetchCompletedIssues(username string, startDate, endDate ti
 	params := url.Values{}
 	params.Add("jql", jql)
 	params.Add("maxResults", "1000")
-	params.Add("fields", "summary,status,issuetype,created,updated")
+	params.Add("fields", "summary,status,issuetype,priority,assignee,reporter,customfield_12310243,created,updated,resolutiondate")
 
 	apiURL := fmt.Sprintf("%s/rest/api/2/search?%s", j.baseURL, params.Encode())
 
@@ -103,14 +119,32 @@ func (j *JiraClient) FetchCompletedIssues(username string, startDate, endDate ti
 	for _, issue := range searchResp.Issues {
 		created, _ := time.Parse(time.RFC3339, issue.Fields.Created)
 		updated, _ := time.Parse(time.RFC3339, issue.Fields.Updated)
+		resolved, _ := time.Parse(time.RFC3339, issue.Fields.ResolutionDate)
+
+		// Parse story points - could be float64 or nil
+		var storyPoints *float64
+		if issue.Fields.StoryPoints != nil {
+			switch v := issue.Fields.StoryPoints.(type) {
+			case float64:
+				storyPoints = &v
+			case int:
+				fp := float64(v)
+				storyPoints = &fp
+			}
+		}
 
 		issues = append(issues, JiraIssue{
-			Key:     issue.Key,
-			Summary: issue.Fields.Summary,
-			Status:  issue.Fields.Status.Name,
-			Type:    issue.Fields.IssueType.Name,
-			Created: created,
-			Updated: updated,
+			Key:         issue.Key,
+			Summary:     issue.Fields.Summary,
+			Status:      issue.Fields.Status.Name,
+			Type:        issue.Fields.IssueType.Name,
+			Priority:    issue.Fields.Priority.Name,
+			StoryPoints: storyPoints,
+			Assignee:    issue.Fields.Assignee.DisplayName,
+			Reporter:    issue.Fields.Reporter.DisplayName,
+			Created:     created,
+			Updated:     updated,
+			Resolved:    resolved,
 		})
 	}
 

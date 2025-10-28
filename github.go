@@ -20,13 +20,18 @@ type GitHubData struct {
 }
 
 type PullRequest struct {
-	Number    int
-	Title     string
-	URL       string
-	State     string
-	CreatedAt time.Time
-	MergedAt  *time.Time
-	Repo      string
+	Number       int
+	Title        string
+	URL          string
+	State        string
+	CreatedAt    time.Time
+	MergedAt     *time.Time
+	Repo         string
+	Commits      int
+	Additions    int
+	Deletions    int
+	ChangedFiles int
+	ReviewComments int
 }
 
 type Issue struct {
@@ -113,18 +118,35 @@ func (g *GitHubClient) fetchPullRequests(ctx context.Context, username string, s
 		}
 
 		for _, issue := range result.Issues {
+			repoName := extractRepo(*issue.HTMLURL)
+			owner, repo := splitRepoName(repoName)
+
 			pr := PullRequest{
 				Number:    *issue.Number,
 				Title:     *issue.Title,
 				URL:       *issue.HTMLURL,
 				State:     *issue.State,
 				CreatedAt: issue.CreatedAt.Time,
-				Repo:      extractRepo(*issue.HTMLURL),
+				Repo:      repoName,
 			}
+
 			if issue.PullRequestLinks != nil && issue.ClosedAt != nil {
 				mergedAt := issue.ClosedAt.Time
 				pr.MergedAt = &mergedAt
 			}
+
+			// Fetch detailed PR info
+			if owner != "" && repo != "" {
+				prDetail, _, err := g.client.PullRequests.Get(ctx, owner, repo, *issue.Number)
+				if err == nil && prDetail != nil {
+					pr.Commits = safeInt(prDetail.Commits)
+					pr.Additions = safeInt(prDetail.Additions)
+					pr.Deletions = safeInt(prDetail.Deletions)
+					pr.ChangedFiles = safeInt(prDetail.ChangedFiles)
+					pr.ReviewComments = safeInt(prDetail.Comments)
+				}
+			}
+
 			allPRs = append(allPRs, pr)
 		}
 
@@ -293,4 +315,28 @@ func extractRepo(url string) string {
 		}
 	}
 	return repo
+}
+
+func splitRepoName(repoName string) (owner, repo string) {
+	// Split "owner/repo" into separate parts
+	parts := []rune(repoName)
+	slashIdx := -1
+	for i, r := range parts {
+		if r == '/' {
+			slashIdx = i
+			break
+		}
+	}
+	if slashIdx > 0 && slashIdx < len(parts)-1 {
+		owner = string(parts[:slashIdx])
+		repo = string(parts[slashIdx+1:])
+	}
+	return
+}
+
+func safeInt(val *int) int {
+	if val == nil {
+		return 0
+	}
+	return *val
 }

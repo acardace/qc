@@ -30,6 +30,10 @@ type ReportData struct {
 	MergedPRs          int
 	ClosedIssues       int
 	UniqueReposWorked  int
+	TotalCommits       int
+	TotalLinesAdded    int
+	TotalLinesDeleted  int
+	TotalStoryPoints   float64
 }
 
 const htmlTemplate = `<!DOCTYPE html>
@@ -166,11 +170,24 @@ const htmlTemplate = `<!DOCTYPE html>
         <div class="stat-card">
             <div class="stat-label">Jira Issues Completed</div>
             <div class="stat-number">{{.TotalJiraIssues}}</div>
+            {{if gt .TotalStoryPoints 0.0}}
+            <div class="stat-label">{{printf "%.1f" .TotalStoryPoints}} story points</div>
+            {{end}}
         </div>
         <div class="stat-card">
             <div class="stat-label">Pull Requests</div>
             <div class="stat-number">{{.TotalPRs}}</div>
             <div class="stat-label">{{.MergedPRs}} merged</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Commits</div>
+            <div class="stat-number">{{.TotalCommits}}</div>
+            <div class="stat-label">Across all PRs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Code Changes</div>
+            <div class="stat-number">{{.TotalLinesAdded}}</div>
+            <div class="stat-label" style="color: #22863a;">+{{.TotalLinesAdded}} / <span style="color: #cb2431;">-{{.TotalLinesDeleted}}</span></div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Issues</div>
@@ -200,7 +217,9 @@ const htmlTemplate = `<!DOCTYPE html>
                 <div class="item-meta">
                     <span class="badge badge-success">{{.Status}}</span>
                     <span class="badge badge-info">{{.Type}}</span>
-                    Updated: {{.Updated.Format "2006-01-02"}}
+                    {{if .Priority}}<span class="badge badge-warning">{{.Priority}}</span>{{end}}
+                    {{if .StoryPoints}}<span class="badge badge-info">{{printf "%.1f" .StoryPoints}} SP</span>{{end}}
+                    Resolved: {{.Resolved.Format "2006-01-02"}}
                 </div>
             </li>
         {{end}}
@@ -224,6 +243,10 @@ const htmlTemplate = `<!DOCTYPE html>
                     <span class="badge badge-warning">{{.State}}</span>
                     {{end}}
                     <span class="badge badge-info">{{.Repo}}</span>
+                    {{if gt .Commits 0}}<span class="badge badge-info">{{.Commits}} commits</span>{{end}}
+                    {{if gt .Additions 0}}<span style="color: #22863a;">+{{.Additions}}</span>{{end}}
+                    {{if gt .Deletions 0}}<span style="color: #cb2431;">-{{.Deletions}}</span>{{end}}
+                    {{if gt .ChangedFiles 0}}<span class="badge badge-info">{{.ChangedFiles}} files</span>{{end}}
                     Created: {{.CreatedAt.Format "2006-01-02"}}
                 </div>
             </li>
@@ -284,10 +307,16 @@ const htmlTemplate = `<!DOCTYPE html>
 func GenerateReport(associateName, quarter string, year int, startDate, endDate time.Time, jiraURL string, jiraIssues []JiraIssue, githubData *GitHubData) string {
 	// Count merged PRs
 	mergedPRs := 0
+	totalCommits := 0
+	totalLinesAdded := 0
+	totalLinesDeleted := 0
 	for _, pr := range githubData.PullRequests {
 		if pr.MergedAt != nil {
 			mergedPRs++
 		}
+		totalCommits += pr.Commits
+		totalLinesAdded += pr.Additions
+		totalLinesDeleted += pr.Deletions
 	}
 
 	// Count closed issues
@@ -295,6 +324,14 @@ func GenerateReport(associateName, quarter string, year int, startDate, endDate 
 	for _, issue := range githubData.Issues {
 		if issue.ClosedAt != nil {
 			closedIssues++
+		}
+	}
+
+	// Count story points
+	totalStoryPoints := 0.0
+	for _, issue := range jiraIssues {
+		if issue.StoryPoints != nil {
+			totalStoryPoints += *issue.StoryPoints
 		}
 	}
 
@@ -329,6 +366,10 @@ func GenerateReport(associateName, quarter string, year int, startDate, endDate 
 		MergedPRs:          mergedPRs,
 		ClosedIssues:       closedIssues,
 		UniqueReposWorked:  len(repoMap),
+		TotalCommits:       totalCommits,
+		TotalLinesAdded:    totalLinesAdded,
+		TotalLinesDeleted:  totalLinesDeleted,
+		TotalStoryPoints:   totalStoryPoints,
 	}
 
 	tmpl, err := template.New("report").Parse(htmlTemplate)
