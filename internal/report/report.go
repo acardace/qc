@@ -1,10 +1,12 @@
-package main
+package report
 
 import (
 	"fmt"
 	"html/template"
 	"strings"
 	"time"
+
+	"github.com/acardace/qc/internal/clients"
 )
 
 type ReportData struct {
@@ -17,13 +19,13 @@ type ReportData struct {
 	JiraURL       string
 
 	// Jira Stats
-	JiraIssues      []JiraIssue
+	JiraIssues      []clients.JiraIssue
 	TotalJiraIssues int
 
 	// GitHub Stats
-	PullRequests       []PullRequest
-	Issues             []Issue
-	CodeReviews        []CodeReview
+	PullRequests       []clients.PullRequest
+	Issues             []clients.Issue
+	CodeReviews        []clients.CodeReview
 	TotalPRs           int
 	TotalIssues        int
 	TotalCodeReviews   int
@@ -304,7 +306,7 @@ const htmlTemplate = `<!DOCTYPE html>
 </body>
 </html>`
 
-func GenerateReport(associateName, quarter string, year int, startDate, endDate time.Time, jiraURL string, jiraIssues []JiraIssue, githubData *GitHubData) string {
+func Generate(associateName, quarter string, year int, startDate, endDate time.Time, jiraURL string, jiraIssues []clients.JiraIssue, githubData *clients.GitHubData) string {
 	// Count merged PRs
 	mergedPRs := 0
 	totalCommits := 0

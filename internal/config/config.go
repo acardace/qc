@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"os"
@@ -23,7 +23,7 @@ type AssociateInfo struct {
 	FullName       string `yaml:"full_name"`
 }
 
-func loadConfig(filename string) (*Config, error) {
+func Load(filename string) (*Config, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err

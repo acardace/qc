@@ -6,6 +6,10 @@ import (
 	"log"
 	"os"
 	"time"
+
+	"github.com/acardace/qc/internal/clients"
+	"github.com/acardace/qc/internal/config"
+	"github.com/acardace/qc/internal/report"
 )
 
 func main() {
@@ -30,13 +34,13 @@ func main() {
 	}
 
 	// Load config
-	config, err := loadConfig(*configFile)
+	cfg, err := config.Load(*configFile)
 	if err != nil {
 		log.Fatalf("Error loading config: %v", err)
 	}
 
 	// Get associate info from config
-	associateInfo, ok := config.Associates[*associate]
+	associateInfo, ok := cfg.Associates[*associate]
 	if !ok {
 		log.Fatalf("Associate '%s' not found in config file", *associate)
 	}
@@ -46,7 +50,7 @@ func main() {
 
 	// Fetch Jira data
 	fmt.Println("Fetching Jira data...")
-	jiraClient := NewJiraClient(config.Jira.URL, config.Jira.Token)
+	jiraClient := clients.NewJiraClient(cfg.Jira.URL, cfg.Jira.Token)
 	jiraIssues, err := jiraClient.FetchCompletedIssues(associateInfo.JiraUsername, startDate, endDate)
 	if err != nil {
 		log.Fatalf("Error fetching Jira data: %v", err)
@@ -54,7 +58,7 @@ func main() {
 
 	// Fetch GitHub data
 	fmt.Println("Fetching GitHub data...")
-	githubClient := NewGitHubClient(config.GitHub.Token)
+	githubClient := clients.NewGitHubClient(cfg.GitHub.Token)
 	githubData, err := githubClient.FetchContributions(associateInfo.GitHubUsername, startDate, endDate)
 	if err != nil {
 		log.Fatalf("Error fetching GitHub data: %v", err)
@@ -62,7 +66,7 @@ func main() {
 
 	// Generate report
 	fmt.Println("Generating HTML report...")
-	report := GenerateReport(*associate, *quarter, *year, startDate, endDate, config.Jira.URL, jiraIssues, githubData)
+	reportHTML := report.Generate(*associate, *quarter, *year, startDate, endDate, cfg.Jira.URL, jiraIssues, githubData)
 
 	// Save report
 	if err := os.MkdirAll(*outputDir, 0755); err != nil {
@@ -70,7 +74,7 @@ func main() {
 	}
 
 	outputFile := fmt.Sprintf("%s/%s_%s_%d.html", *outputDir, *associate, *quarter, *year)
-	if err := os.WriteFile(outputFile, []byte(report), 0644); err != nil {
+	if err := os.WriteFile(outputFile, []byte(reportHTML), 0644); err != nil {
 		log.Fatalf("Error writing report: %v", err)
 	}
 

@@ -153,16 +153,23 @@ Report generated successfully: reports/john_doe_Q1_2024.html
 
 ```
 .
-├── main.go           # CLI entry point and main logic
-├── config.go         # Configuration loading
-├── jira.go           # Jira API client
-├── github.go         # GitHub API client
-├── report.go         # HTML report generation
-├── config.yaml       # Your configuration (gitignored)
-├── config.example.yaml  # Example configuration
-├── go.mod            # Go module file
-├── go.sum            # Go dependencies
-└── README.md         # This file
+├── cmd/
+│   └── qc/
+│       └── main.go              # CLI entry point and main logic
+├── internal/
+│   ├── clients/
+│   │   ├── jira.go              # Jira API client
+│   │   └── github.go            # GitHub API client
+│   ├── config/
+│   │   └── config.go            # Configuration loading
+│   └── report/
+│       └── report.go            # HTML report generation
+├── Makefile                     # Build automation
+├── config.yaml                  # Your configuration (gitignored)
+├── config.example.yaml          # Example configuration
+├── go.mod                       # Go module file
+├── go.sum                       # Go dependencies
+└── README.md                    # This file
 ```
 
 ## Troubleshooting

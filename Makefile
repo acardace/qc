@@ -17,7 +17,7 @@ GOINSTALL=$(GOCMD) install
 # Build the binary for Linux
 build:
 	@echo "Building $(BINARY_NAME) for Linux..."
-	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BUILD_DIR)/$(BINARY_NAME) -v
+	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/qc
 
 # Clean build artifacts
 clean:
