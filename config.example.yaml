@@ -1,0 +1,21 @@
+# Quarterly Connection Tool Configuration
+
+jira:
+  url: "https://jira.your-company.com"
+  token: "your-jira-personal-access-token"
+
+github:
+  token: "your-github-personal-access-token"
+
+associates:
+  john_doe:
+    jira_username: "john.doe"
+    github_username: "johndoe"
+    full_name: "John Doe"
+
+  jane_smith:
+    jira_username: "jane.smith"
+    github_username: "janesmith"
+    full_name: "Jane Smith"
+
+  # Add more associates as needed
