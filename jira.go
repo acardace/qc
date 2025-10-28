@@ -64,7 +64,7 @@ func (j *JiraClient) FetchCompletedIssues(username string, startDate, endDate ti
 	params.Add("maxResults", "1000")
 	params.Add("fields", "summary,status,issuetype,created,updated")
 
-	apiURL := fmt.Sprintf("%s/rest/api/3/search?%s", j.baseURL, params.Encode())
+	apiURL := fmt.Sprintf("%s/rest/api/2/search?%s", j.baseURL, params.Encode())
 
 	req, err := http.NewRequest("GET", apiURL, nil)
 	if err != nil {
@@ -80,14 +80,23 @@ func (j *JiraClient) FetchCompletedIssues(username string, startDate, endDate ti
 	}
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading response body: %w", err)
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("Jira API error (status %d): %s", resp.StatusCode, string(body))
 	}
 
 	var searchResp jiraSearchResponse
-	if err := json.NewDecoder(resp.Body).Decode(&searchResp); err != nil {
-		return nil, fmt.Errorf("decoding response: %w", err)
+	if err := json.Unmarshal(body, &searchResp); err != nil {
+		// Show the first 200 characters of the response to help debug
+		preview := string(body)
+		if len(preview) > 200 {
+			preview = preview[:200] + "..."
+		}
+		return nil, fmt.Errorf("decoding JSON response: %w\nResponse preview: %s", err, preview)
 	}
 
 	issues := make([]JiraIssue, 0, len(searchResp.Issues))
