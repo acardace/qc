@@ -224,8 +224,11 @@ No associate specified - generating reports for all 3 associates
 
 **GitHub rate limiting:**
 - GitHub has rate limits (30 requests/minute for search API)
-- Authenticated requests have higher limits
-- If you hit limits, wait a few minutes and try again
+- The tool automatically handles rate limits and retries after waiting
+- You'll see messages like "Rate limit detected. Waiting..." if this occurs
+- For large teams or date ranges, the tool may take several minutes to complete
+- Primary rate limits reset every hour
+- Secondary (abuse detection) limits may require 1-minute waits between retries
 
 **No data returned:**
 - Verify the associate's username is correct in both systems

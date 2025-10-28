@@ -3,6 +3,8 @@ package clients
 import (
 	"context"
 	"fmt"
+	"log"
+	"strconv"
 	"time"
 
 	"github.com/google/go-github/v57/github"
@@ -63,6 +65,66 @@ func NewGitHubClient(token string) *GitHubClient {
 	}
 }
 
+// handleRateLimit checks the error and response for rate limiting, waits if needed, and returns whether to retry
+func handleRateLimit(err error, resp *github.Response) bool {
+	if err == nil {
+		return false
+	}
+
+	// Check for rate limit error
+	if rateLimitErr, ok := err.(*github.RateLimitError); ok {
+		waitUntil := time.Until(rateLimitErr.Rate.Reset.Time)
+		log.Printf("    Primary rate limit reached. Waiting %v until %v...",
+			waitUntil.Round(time.Second), rateLimitErr.Rate.Reset.Time.Format("15:04:05"))
+		time.Sleep(waitUntil + time.Second) // Add 1 second buffer
+		return true
+	}
+
+	// Check for secondary rate limit (abuse detection)
+	if abuseErr, ok := err.(*github.AbuseRateLimitError); ok {
+		// GitHub recommends waiting before retry
+		waitTime := time.Minute
+		if abuseErr.RetryAfter != nil {
+			waitTime = *abuseErr.RetryAfter
+		}
+		log.Printf("    Secondary rate limit (abuse detection). Waiting %v before retry...", waitTime.Round(time.Second))
+		time.Sleep(waitTime)
+		return true
+	}
+
+	// Check HTTP response for rate limit status codes
+	if resp != nil && (resp.StatusCode == 403 || resp.StatusCode == 429) {
+		// Try to parse Retry-After header
+		if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
+			if seconds, err := strconv.Atoi(retryAfter); err == nil {
+				waitTime := time.Duration(seconds) * time.Second
+				log.Printf("    Rate limit detected (HTTP %d). Waiting %v...", resp.StatusCode, waitTime)
+				time.Sleep(waitTime)
+				return true
+			}
+		}
+
+		// Check X-RateLimit-Reset header
+		if resetTime := resp.Header.Get("X-RateLimit-Reset"); resetTime != "" {
+			if resetUnix, err := strconv.ParseInt(resetTime, 10, 64); err == nil {
+				waitUntil := time.Until(time.Unix(resetUnix, 0))
+				if waitUntil > 0 {
+					log.Printf("    Rate limit detected (HTTP %d). Waiting %v until reset...", resp.StatusCode, waitUntil.Round(time.Second))
+					time.Sleep(waitUntil + time.Second)
+					return true
+				}
+			}
+		}
+
+		// Fallback: wait 1 minute as GitHub recommends
+		log.Printf("    Rate limit detected (HTTP %d). Waiting 1 minute...", resp.StatusCode)
+		time.Sleep(time.Minute)
+		return true
+	}
+
+	return false
+}
+
 func (g *GitHubClient) FetchContributions(username string, startDate, endDate time.Time) (*GitHubData, error) {
 	ctx := context.Background()
 	data := &GitHubData{
@@ -111,7 +173,19 @@ func (g *GitHubClient) fetchPullRequests(ctx context.Context, username string, s
 
 	var allPRs []PullRequest
 	for {
-		result, resp, err := g.client.Search.Issues(ctx, query, opts)
+		var result *github.IssuesSearchResult
+		var resp *github.Response
+		var err error
+
+		// Retry loop for rate limiting
+		for attempt := 0; attempt < 10; attempt++ {
+			result, resp, err = g.client.Search.Issues(ctx, query, opts)
+			if !handleRateLimit(err, resp) {
+				break
+			}
+			// Rate limit was handled, retry
+		}
+
 		if err != nil {
 			return nil, err
 		}
@@ -171,7 +245,18 @@ func (g *GitHubClient) fetchIssues(ctx context.Context, username string, startDa
 
 	var allIssues []Issue
 	for {
-		result, resp, err := g.client.Search.Issues(ctx, query, opts)
+		var result *github.IssuesSearchResult
+		var resp *github.Response
+		var err error
+
+		// Retry loop for rate limiting
+		for attempt := 0; attempt < 10; attempt++ {
+			result, resp, err = g.client.Search.Issues(ctx, query, opts)
+			if !handleRateLimit(err, resp) {
+				break
+			}
+		}
+
 		if err != nil {
 			return nil, err
 		}
@@ -217,7 +302,18 @@ func (g *GitHubClient) fetchIssues(ctx context.Context, username string, startDa
 	}
 
 	for {
-		result, resp, err := g.client.Search.Issues(ctx, participatedQuery, opts)
+		var result *github.IssuesSearchResult
+		var resp *github.Response
+		var err error
+
+		// Retry loop for rate limiting
+		for attempt := 0; attempt < 10; attempt++ {
+			result, resp, err = g.client.Search.Issues(ctx, participatedQuery, opts)
+			if !handleRateLimit(err, resp) {
+				break
+			}
+		}
+
 		if err != nil {
 			return nil, err
 		}
@@ -267,7 +363,18 @@ func (g *GitHubClient) fetchCodeReviews(ctx context.Context, username string, st
 
 	var allReviews []CodeReview
 	for {
-		result, resp, err := g.client.Search.Issues(ctx, query, opts)
+		var result *github.IssuesSearchResult
+		var resp *github.Response
+		var err error
+
+		// Retry loop for rate limiting
+		for attempt := 0; attempt < 10; attempt++ {
+			result, resp, err = g.client.Search.Issues(ctx, query, opts)
+			if !handleRateLimit(err, resp) {
+				break
+			}
+		}
+
 		if err != nil {
 			return nil, err
 		}
