@@ -21,8 +21,9 @@ func main() {
 
 	flag.Parse()
 
-	if *quarter == "" || *associate == "" {
-		fmt.Println("Usage: qc --quarter <Q1|Q2|Q3|Q4> --associate <name> [--year <year>] [--config <path>] [--output <dir>]")
+	if *quarter == "" {
+		fmt.Println("Usage: qc --quarter <Q1|Q2|Q3|Q4> [--associate <name>] [--year <year>] [--config <path>] [--output <dir>]")
+		fmt.Println("\nIf --associate is not specified, reports will be generated for all associates in the config file.")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
@@ -39,46 +40,71 @@ func main() {
 		log.Fatalf("Error loading config: %v", err)
 	}
 
-	// Get associate info from config
-	associateInfo, ok := cfg.Associates[*associate]
-	if !ok {
-		log.Fatalf("Associate '%s' not found in config file", *associate)
+	// Determine which associates to process
+	var associatesToProcess []string
+	if *associate != "" {
+		// Single associate specified
+		if _, ok := cfg.Associates[*associate]; !ok {
+			log.Fatalf("Associate '%s' not found in config file", *associate)
+		}
+		associatesToProcess = []string{*associate}
+	} else {
+		// No associate specified - process all
+		for name := range cfg.Associates {
+			associatesToProcess = append(associatesToProcess, name)
+		}
+		if len(associatesToProcess) == 0 {
+			log.Fatalf("No associates found in config file")
+		}
+		fmt.Printf("No associate specified - generating reports for all %d associates\n", len(associatesToProcess))
 	}
 
-	fmt.Printf("Generating report for %s (%s %d: %s to %s)...\n",
-		*associate, *quarter, *year, startDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
-
-	// Fetch Jira data
-	fmt.Println("Fetching Jira data...")
-	jiraClient := clients.NewJiraClient(cfg.Jira.URL, cfg.Jira.Token)
-	jiraIssues, err := jiraClient.FetchCompletedIssues(associateInfo.JiraUsername, startDate, endDate)
-	if err != nil {
-		log.Fatalf("Error fetching Jira data: %v", err)
-	}
-
-	// Fetch GitHub data
-	fmt.Println("Fetching GitHub data...")
-	githubClient := clients.NewGitHubClient(cfg.GitHub.Token)
-	githubData, err := githubClient.FetchContributions(associateInfo.GitHubUsername, startDate, endDate)
-	if err != nil {
-		log.Fatalf("Error fetching GitHub data: %v", err)
-	}
-
-	// Generate report
-	fmt.Println("Generating HTML report...")
-	reportHTML := report.Generate(*associate, *quarter, *year, startDate, endDate, cfg.Jira.URL, jiraIssues, githubData)
-
-	// Save report
+	// Create output directory
 	if err := os.MkdirAll(*outputDir, 0755); err != nil {
 		log.Fatalf("Error creating output directory: %v", err)
 	}
 
-	outputFile := fmt.Sprintf("%s/%s_%s_%d.html", *outputDir, *associate, *quarter, *year)
-	if err := os.WriteFile(outputFile, []byte(reportHTML), 0644); err != nil {
-		log.Fatalf("Error writing report: %v", err)
+	// Process each associate
+	for i, assocName := range associatesToProcess {
+		associateInfo := cfg.Associates[assocName]
+
+		fmt.Printf("\n[%d/%d] Generating report for %s (%s %d: %s to %s)...\n",
+			i+1, len(associatesToProcess), assocName, *quarter, *year,
+			startDate.Format("2006-01-02"), endDate.Format("2006-01-02"))
+
+		// Fetch Jira data
+		fmt.Println("  Fetching Jira data...")
+		jiraClient := clients.NewJiraClient(cfg.Jira.URL, cfg.Jira.Token)
+		jiraIssues, err := jiraClient.FetchCompletedIssues(associateInfo.JiraUsername, startDate, endDate)
+		if err != nil {
+			log.Printf("  Warning: Error fetching Jira data for %s: %v", assocName, err)
+			continue
+		}
+
+		// Fetch GitHub data
+		fmt.Println("  Fetching GitHub data...")
+		githubClient := clients.NewGitHubClient(cfg.GitHub.Token)
+		githubData, err := githubClient.FetchContributions(associateInfo.GitHubUsername, startDate, endDate)
+		if err != nil {
+			log.Printf("  Warning: Error fetching GitHub data for %s: %v", assocName, err)
+			continue
+		}
+
+		// Generate report
+		fmt.Println("  Generating HTML report...")
+		reportHTML := report.Generate(assocName, *quarter, *year, startDate, endDate, cfg.Jira.URL, jiraIssues, githubData)
+
+		// Save report
+		outputFile := fmt.Sprintf("%s/%s_%s_%d.html", *outputDir, assocName, *quarter, *year)
+		if err := os.WriteFile(outputFile, []byte(reportHTML), 0644); err != nil {
+			log.Printf("  Warning: Error writing report for %s: %v", assocName, err)
+			continue
+		}
+
+		fmt.Printf("  ✓ Report generated: %s\n", outputFile)
 	}
 
-	fmt.Printf("Report generated successfully: %s\n", outputFile)
+	fmt.Printf("\n✓ All reports generated successfully in %s/\n", *outputDir)
 }
 
 func getQuarterDates(quarter string, year int) (time.Time, time.Time, error) {
