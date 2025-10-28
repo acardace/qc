@@ -34,20 +34,6 @@ A CLI tool to generate quarterly performance reports for associates by aggregati
 - Jira Personal Access Token (for Jira Data Center/Server)
 - GitHub Personal Access Token
 
-## Installation
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd qc
-
-# Build the binary
-go build -o qc
-
-# Optional: Install globally
-go install
-```
-
 ## Configuration
 
 1. Copy the example configuration file:
@@ -234,7 +220,3 @@ No associate specified - generating reports for all 3 associates
 - Verify the associate's username is correct in both systems
 - Check that the date range contains actual activity
 - Ensure the associate has the necessary permissions
-
-## License
-
-MIT
