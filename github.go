@@ -31,7 +31,6 @@ type PullRequest struct {
 	Additions    int
 	Deletions    int
 	ChangedFiles int
-	ReviewComments int
 }
 
 type Issue struct {
@@ -143,7 +142,6 @@ func (g *GitHubClient) fetchPullRequests(ctx context.Context, username string, s
 					pr.Additions = safeInt(prDetail.Additions)
 					pr.Deletions = safeInt(prDetail.Deletions)
 					pr.ChangedFiles = safeInt(prDetail.ChangedFiles)
-					pr.ReviewComments = safeInt(prDetail.Comments)
 				}
 			}
 
