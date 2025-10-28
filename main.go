@@ -62,7 +62,7 @@ func main() {
 
 	// Generate report
 	fmt.Println("Generating HTML report...")
-	report := GenerateReport(*associate, *quarter, *year, startDate, endDate, jiraIssues, githubData)
+	report := GenerateReport(*associate, *quarter, *year, startDate, endDate, config.Jira.URL, jiraIssues, githubData)
 
 	// Save report
 	if err := os.MkdirAll(*outputDir, 0755); err != nil {

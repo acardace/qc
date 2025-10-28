@@ -14,6 +14,7 @@ type ReportData struct {
 	StartDate     string
 	EndDate       string
 	GeneratedAt   string
+	JiraURL       string
 
 	// Jira Stats
 	JiraIssues      []JiraIssue
@@ -280,7 +281,7 @@ const htmlTemplate = `<!DOCTYPE html>
 </body>
 </html>`
 
-func GenerateReport(associateName, quarter string, year int, startDate, endDate time.Time, jiraIssues []JiraIssue, githubData *GitHubData) string {
+func GenerateReport(associateName, quarter string, year int, startDate, endDate time.Time, jiraURL string, jiraIssues []JiraIssue, githubData *GitHubData) string {
 	// Count merged PRs
 	mergedPRs := 0
 	for _, pr := range githubData.PullRequests {
@@ -316,6 +317,7 @@ func GenerateReport(associateName, quarter string, year int, startDate, endDate 
 		StartDate:          startDate.Format("2006-01-02"),
 		EndDate:            endDate.Format("2006-01-02"),
 		GeneratedAt:        time.Now().Format("2006-01-02 15:04:05"),
+		JiraURL:            jiraURL,
 		JiraIssues:         jiraIssues,
 		TotalJiraIssues:    len(jiraIssues),
 		PullRequests:       githubData.PullRequests,
